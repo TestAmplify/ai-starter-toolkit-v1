@@ -1,7 +1,7 @@
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Quote, MessageCircle, FileText, Palette, Sparkles, ArrowRight } from "lucide-react";
+import { Quote, MessageCircle, FileText, Palette, Sparkles, ArrowRight, Bot, Bug } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Index = () => {
@@ -55,6 +55,22 @@ const Index = () => {
       path: "/playwright",
       color: "bg-gradient-to-br from-teal-500 to-cyan-500",
       textColor: "text-teal-600"
+    },
+    {
+      title: "Puppeteer Generator",
+      description: "Generate Puppeteer scripts for browser automation",
+      icon: Bot,
+      path: "/puppeteer",
+      color: "bg-gradient-to-br from-blue-500 to-green-500",
+      textColor: "text-blue-600"
+    },
+    {
+      title: "StackTrace Analyzer",
+      description: "Get actionable debugging suggestions from error traces",
+      icon: Bug,
+      path: "/stacktrace",
+      color: "bg-gradient-to-br from-red-500 to-orange-500",
+      textColor: "text-red-600"
     }
   ];
 
@@ -77,7 +93,7 @@ const Index = () => {
         </div>
 
         {/* Tools Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 max-w-4xl mx-auto mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 max-w-6xl mx-auto mb-12">
           {tools.map((tool, index) => (
             <Card key={index} className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg hover:-translate-y-1">
               <CardHeader className="pb-4">

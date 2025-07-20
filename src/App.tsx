@@ -12,6 +12,8 @@ import Summarizer from "./pages/Summarizer";
 import Colors from "./pages/Colors";
 import TestCases from "./pages/TestCases";
 import PlayWrighter from "./pages/PlayWrighter";
+import Puppeteer from "./pages/Puppeteer";
+import StackTrace from "./pages/StackTrace";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +33,8 @@ const App = () => (
             <Route path="/colors" element={<Colors />} />
             <Route path="/test-cases" element={<TestCases />} />
             <Route path="/playwright" element={<PlayWrighter />} />
+            <Route path="/puppeteer" element={<Puppeteer />} />
+            <Route path="/stacktrace" element={<StackTrace />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
