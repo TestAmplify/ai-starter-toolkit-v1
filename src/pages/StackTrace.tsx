@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft, Bug, Copy, Search, AlertTriangle, CheckCircle, FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useApiKey } from "@/contexts/ApiKeyContext";
-import { ApiKeyConfig } from "@/components/ApiKeyConfig";
+import ApiKeyConfig from "@/components/ApiKeyConfig";
 import { useToast } from "@/hooks/use-toast";
 
 interface AnalysisResult {

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Bot, Copy, Play, AlertCircle, CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useApiKey } from "@/contexts/ApiKeyContext";
-import { ApiKeyConfig } from "@/components/ApiKeyConfig";
+import ApiKeyConfig from "@/components/ApiKeyConfig";
 import { useToast } from "@/hooks/use-toast";
 
 const Puppeteer = () => {
@@ -292,7 +291,7 @@ Generate only the runTest function code.`;
                       <Checkbox 
                         id="responsive" 
                         checked={responsive}
-                        onCheckedChange={setResponsive}
+                        onCheckedChange={(checked) => setResponsive(checked === true)}
                       />
                       <Label htmlFor="responsive">Responsive Testing</Label>
                     </div>
@@ -300,7 +299,7 @@ Generate only the runTest function code.`;
                       <Checkbox 
                         id="accessibility" 
                         checked={accessibility}
-                        onCheckedChange={setAccessibility}
+                        onCheckedChange={(checked) => setAccessibility(checked === true)}
                       />
                       <Label htmlFor="accessibility">Accessibility Checks</Label>
                     </div>
@@ -308,7 +307,7 @@ Generate only the runTest function code.`;
                       <Checkbox 
                         id="forms" 
                         checked={forms}
-                        onCheckedChange={setForms}
+                        onCheckedChange={(checked) => setForms(checked === true)}
                       />
                       <Label htmlFor="forms">Form Validation</Label>
                     </div>
