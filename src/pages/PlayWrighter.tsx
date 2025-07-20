@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Play, Copy, Settings, Info } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { ArrowLeft, Play, Copy, Settings, Info, Shield, CheckCircle, AlertCircle } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useApiKey } from "@/contexts/ApiKeyContext";
@@ -30,6 +30,9 @@ const PlayWrighter = () => {
     forms: false
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
+  const [checkResult, setCheckResult] = useState<{ status: 'ready' | 'needs-update'; issues?: string[] } | null>(null);
+  const [showCheckDialog, setShowCheckDialog] = useState(false);
   const [testMetadata, setTestMetadata] = useState(null);
 
   // Handle incoming data from navigation state
@@ -38,6 +41,174 @@ const PlayWrighter = () => {
       setTestCase(location.state.testCase);
     }
   }, [location.state]);
+
+  const checkGeneratedCode = async () => {
+    if (!playwrightCode.trim()) {
+      toast({
+        title: "No code to check",
+        description: "Generate code first before checking",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsChecking(true);
+    
+    try {
+      const systemPrompt = `You are a Playwright code quality analyzer. Analyze the provided Playwright test code and determine if it's ready for use or needs updates.
+
+Check for:
+1. Proper Playwright syntax (page.locator, page.waitForLoadState, page.fill, etc.)
+2. Correct navigation patterns with waitForLoadState('networkidle')
+3. Proper error handling with try-catch blocks
+4. Complete test coverage based on requirements
+5. Missing or incorrect selectors
+6. Proper async/await usage
+7. Missing console.log statements for debugging
+8. Correct function structure
+9. Proper use of expect assertions
+
+Respond with JSON in this exact format:
+{
+  "status": "ready" or "needs-update",
+  "issues": ["issue 1", "issue 2"] // only if status is "needs-update"
+}
+
+If the code is ready, return {"status": "ready"}
+If it needs updates, list specific issues that need to be fixed.`;
+
+      const userPrompt = `Analyze this Playwright code:
+
+Original Requirements:
+- Test Case: ${testCase}
+- Base URL: ${baseUrl}
+- Features: ${Object.entries(testOptions).filter(([_, enabled]) => enabled).map(([option]) => option).join(', ')}
+
+Generated Code:
+${playwrightCode}
+
+Is this code ready for use or does it need updates?`;
+
+      if (openaiApiKey) {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openaiApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'gpt-4.1-2025-04-14',
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt }
+            ],
+            temperature: 0.1,
+            max_tokens: 1000,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to check code');
+        }
+
+        const data = await response.json();
+        const result = JSON.parse(data.choices[0].message.content);
+        setCheckResult(result);
+        setShowCheckDialog(true);
+      } else {
+        // Mock check for demo
+        const mockResult = Math.random() > 0.5 ? 
+          { status: 'ready' as const } : 
+          { 
+            status: 'needs-update' as const, 
+            issues: ['Missing expect assertions for validation', 'Selectors could be more robust with fallbacks', 'Add more console.log statements for debugging'] 
+          };
+        setCheckResult(mockResult);
+        setShowCheckDialog(true);
+      }
+    } catch (error) {
+      console.error('Error checking code:', error);
+      toast({
+        title: "Check failed",
+        description: "Unable to analyze code. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsChecking(false);
+    }
+  };
+
+  const handleUpdateCode = async () => {
+    setShowCheckDialog(false);
+    
+    if (!checkResult?.issues) return;
+    
+    // Regenerate code with identified issues as additional context
+    setIsLoading(true);
+    
+    try {
+      const systemPrompt = generateSystemPrompt() + `
+
+IMPORTANT: Fix these specific issues that were identified:
+${checkResult.issues.map(issue => `- ${issue}`).join('\n')}
+
+Generate improved Playwright code that addresses all the identified issues.`;
+
+      const userPrompt = generateTestPrompt() + `
+
+Previously identified issues to fix:
+${checkResult.issues.map(issue => `- ${issue}`).join('\n')}
+
+Generate improved code that fixes all these issues.`;
+
+      if (openaiApiKey) {
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${openaiApiKey}`
+          },
+          body: JSON.stringify({
+            model: "gpt-4.1-2025-04-14",
+            messages: [
+              {
+                role: "system",
+                content: systemPrompt
+              },
+              {
+                role: "user",
+                content: userPrompt
+              }
+            ],
+            max_tokens: 2000,
+            temperature: 0.1
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to generate updated Playwright code");
+        }
+
+        const data = await response.json();
+        const generatedCode = data.choices[0]?.message?.content || "No code generated";
+        setPlaywrightCode(generatedCode);
+        
+        toast({
+          title: "Code updated successfully",
+          description: "Your Playwright test code has been improved",
+        });
+      }
+    } catch (error) {
+      console.error('Error updating code:', error);
+      toast({
+        title: "Update failed",
+        description: "Please try again",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const parseTestRequirements = (testCaseText) => {
     const text = testCaseText.toLowerCase();
@@ -435,15 +606,30 @@ Test the main homepage for:
                   </CardDescription>
                 </div>
                 {playwrightCode && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={copyToClipboard}
-                    className="flex items-center gap-2"
-                  >
-                    <Copy className="h-4 w-4" />
-                    Copy
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={checkGeneratedCode}
+                      disabled={isChecking}
+                    >
+                      {isChecking ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2" />
+                      ) : (
+                        <Shield className="mr-2 h-4 w-4" />
+                      )}
+                      Check
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={copyToClipboard}
+                      className="flex items-center gap-2"
+                    >
+                      <Copy className="h-4 w-4" />
+                      Copy
+                    </Button>
+                  </div>
                 )}
               </div>
             </CardHeader>
@@ -463,6 +649,68 @@ Test the main homepage for:
           </Card>
         </div>
       </div>
+
+      {/* Check Result Dialog */}
+      <AlertDialog open={showCheckDialog} onOpenChange={setShowCheckDialog}>
+        <AlertDialogContent className={checkResult?.status === 'needs-update' ? 'border-purple-200 bg-purple-50' : ''}>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              {checkResult?.status === 'ready' ? (
+                <>
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  Code is Ready
+                </>
+              ) : (
+                <>
+                  <AlertCircle className="h-5 w-5 text-purple-600" />
+                  Code Needs Updates
+                </>
+              )}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {checkResult?.status === 'ready' ? (
+                "Your Playwright code is ready to use! All syntax and structure checks passed."
+              ) : (
+                <>
+                  <span className="block mb-2">The following issues were identified:</span>
+                  <ul className="list-disc list-inside space-y-1 text-purple-700">
+                    {checkResult?.issues?.map((issue, index) => (
+                      <li key={index}>{issue}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            {checkResult?.status === 'needs-update' ? (
+              <>
+                <Button variant="outline" onClick={() => setShowCheckDialog(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleUpdateCode}
+                  className="bg-purple-600 hover:bg-purple-700"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                      Updating...
+                    </>
+                  ) : (
+                    'Update Code'
+                  )}
+                </Button>
+              </>
+            ) : (
+              <AlertDialogAction onClick={() => setShowCheckDialog(false)}>
+                Great!
+              </AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
