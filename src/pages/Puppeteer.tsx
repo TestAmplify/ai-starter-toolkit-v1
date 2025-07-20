@@ -31,9 +31,9 @@ const Puppeteer = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
-  const [checkResult, setCheckResult<{ status: 'ready' | 'needs-update'; issues?: string[] } | null>(null);
+  const [checkResult, setCheckResult] = useState<{ status: 'ready' | 'needs-update'; issues?: string[] } | null>(null);
   const [showCheckDialog, setShowCheckDialog] = useState(false);
-  const [testMetadata, setTestMetadata](useState < any) | null > null);
+  const [testMetadata, setTestMetadata] = useState<any | null>(null);
 
   // Handle incoming data from navigation state
   useEffect(() => {
