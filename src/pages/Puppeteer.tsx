@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,13 +8,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Bot, Copy, Play, AlertCircle, CheckCircle } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useApiKey } from "@/contexts/ApiKeyContext";
 import ApiKeyConfig from "@/components/ApiKeyConfig";
 import { useToast } from "@/hooks/use-toast";
 
 const Puppeteer = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { openaiApiKey } = useApiKey();
   const { toast } = useToast();
   
@@ -32,6 +32,13 @@ const Puppeteer = () => {
     features: string[];
     priority: string;
   } | null>(null);
+
+  // Handle incoming test case data from navigation
+  useEffect(() => {
+    if (location.state?.testCase) {
+      setTestCase(location.state.testCase);
+    }
+  }, [location.state]);
 
   const generatePuppeteerCode = async () => {
     if (!testCase.trim()) {

@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, FileText, Settings, Link, Copy, ArrowRight } from "lucide-react";
+import { ArrowLeft, FileText, Settings, Link, Copy, ArrowRight, Bot } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useApiKey } from "@/contexts/ApiKeyContext";
@@ -129,6 +129,18 @@ const TestCases = () => {
     toast({
       title: "Transferred!",
       description: "Test cases sent to PlayWrighter",
+    });
+  };
+
+  const pasteToPuppeteer = () => {
+    if (!testCases) return;
+    
+    // Navigate to Puppeteer with the test cases data
+    navigate("/puppeteer", { state: { testCase: testCases } });
+    
+    toast({
+      title: "Transferred!",
+      description: "Test cases sent to Puppeteer Generator",
     });
   };
 
@@ -275,7 +287,16 @@ Example: As a user, I want to be able to log into the application so that I can 
                       className="flex items-center gap-2"
                     >
                       <ArrowRight className="h-4 w-4" />
-                      Paste
+                      Playwright
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={pasteToPuppeteer}
+                      className="flex items-center gap-2"
+                    >
+                      <Bot className="h-4 w-4" />
+                      Puppeteer
                     </Button>
                   </div>
                 )}
