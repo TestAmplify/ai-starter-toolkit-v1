@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -55,18 +56,25 @@ const PlayWrighter = () => {
     setIsChecking(true);
     
     try {
-      const systemPrompt = `You are a Playwright code quality analyzer. Analyze the provided Playwright test code and determine if it's ready for use or needs updates.
+      const systemPrompt = `You are a Playwright code quality analyzer for serverless-ready test functions. Analyze the provided code that follows the "async function runTest(page, expect)" pattern and determine if it's ready for use.
 
 Check for:
-1. Proper Playwright syntax (page.locator, page.waitForLoadState, page.fill, etc.)
-2. Correct navigation patterns with waitForLoadState('networkidle')
-3. Proper error handling with try-catch blocks
-4. Complete test coverage based on requirements
-5. Missing or incorrect selectors
-6. Proper async/await usage
-7. Missing console.log statements for debugging
-8. Correct function structure
-9. Proper use of expect assertions
+1. Proper serverless function structure: async function runTest(page, expect) with try-catch
+2. Correct Playwright API usage (page.goto, page.locator, page.waitForLoadState, etc.)
+3. Smart selectors with fallbacks (multiple selectors separated by commas)
+4. Proper async/await usage throughout
+5. Console.log statements for debugging and progress tracking
+6. Error handling with meaningful error messages
+7. Proper use of expect assertions for validation
+8. Complete test coverage based on the original requirements
+9. Proper navigation patterns with waitForLoadState('networkidle')
+10. Function completeness (no truncated or incomplete code)
+
+This is NOT a standard Playwright test file - it's a serverless function. Do NOT flag:
+- Missing test() or test.describe() blocks (this is intentional)
+- Missing test runner setup (this is serverless)
+- Hardcoded URLs (baseURL is passed as parameter)
+- Function format instead of test blocks
 
 Respond with JSON in this exact format:
 {
@@ -74,10 +82,10 @@ Respond with JSON in this exact format:
   "issues": ["issue 1", "issue 2"] // only if status is "needs-update"
 }
 
-If the code is ready, return {"status": "ready"}
-If it needs updates, list specific issues that need to be fixed.`;
+If the code is ready for serverless execution, return {"status": "ready"}
+If it needs updates, list specific technical issues that need to be fixed.`;
 
-      const userPrompt = `Analyze this Playwright code:
+      const userPrompt = `Analyze this serverless Playwright function:
 
 Original Requirements:
 - Test Case: ${testCase}
@@ -87,7 +95,7 @@ Original Requirements:
 Generated Code:
 ${playwrightCode}
 
-Is this code ready for use or does it need updates?`;
+Is this serverless function ready for use or does it need updates?`;
 
       if (openaiApiKey) {
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -117,11 +125,11 @@ Is this code ready for use or does it need updates?`;
         setShowCheckDialog(true);
       } else {
         // Mock check for demo
-        const mockResult = Math.random() > 0.5 ? 
+        const mockResult = Math.random() > 0.7 ? 
           { status: 'ready' as const } : 
           { 
             status: 'needs-update' as const, 
-            issues: ['Missing expect assertions for validation', 'Selectors could be more robust with fallbacks', 'Add more console.log statements for debugging'] 
+            issues: ['Function appears incomplete or truncated', 'Missing console.log statements for better debugging', 'Could use more robust error handling'] 
           };
         setCheckResult(mockResult);
         setShowCheckDialog(true);
@@ -147,19 +155,33 @@ Is this code ready for use or does it need updates?`;
     setIsLoading(true);
     
     try {
-      const systemPrompt = generateSystemPrompt() + `
+      const enhancedSystemPrompt = generateSystemPrompt() + `
 
-IMPORTANT: Fix these specific issues that were identified:
+CRITICAL: Address these specific issues identified in the previous code:
 ${checkResult.issues.map(issue => `- ${issue}`).join('\n')}
 
-Generate improved Playwright code that addresses all the identified issues.`;
+Requirements for the updated code:
+- Ensure the function is complete and not truncated
+- Add comprehensive console.log statements for debugging
+- Use robust error handling with meaningful messages
+- Implement smart selectors with multiple fallback options
+- Ensure all async operations use proper await
+- Add proper assertions for all test validations
+- Make sure the function structure is: async function runTest(page, expect) { try { ... } catch { ... } }
 
-      const userPrompt = generateTestPrompt() + `
+Generate improved, complete code that fixes all identified issues.`;
+
+      const userPrompt = `Update the Playwright serverless function to fix these issues:
+
+Original Requirements:
+- Test Case: ${testCase}
+- Base URL: ${baseUrl}
+- Features: ${Object.entries(testOptions).filter(([_, enabled]) => enabled).map(([option]) => option).join(', ')}
 
 Previously identified issues to fix:
 ${checkResult.issues.map(issue => `- ${issue}`).join('\n')}
 
-Generate improved code that fixes all these issues.`;
+Generate a complete, improved serverless function that addresses ALL the identified issues while maintaining the original functionality.`;
 
       if (openaiApiKey) {
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -173,7 +195,7 @@ Generate improved code that fixes all these issues.`;
             messages: [
               {
                 role: "system",
-                content: systemPrompt
+                content: enhancedSystemPrompt
               },
               {
                 role: "user",
@@ -193,9 +215,12 @@ Generate improved code that fixes all these issues.`;
         const generatedCode = data.choices[0]?.message?.content || "No code generated";
         setPlaywrightCode(generatedCode);
         
+        // Clear the check result to allow fresh checking
+        setCheckResult(null);
+        
         toast({
           title: "Code updated successfully",
-          description: "Your Playwright test code has been improved",
+          description: "Your Playwright test code has been improved based on the identified issues",
         });
       }
     } catch (error) {

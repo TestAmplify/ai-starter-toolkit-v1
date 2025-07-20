@@ -1,43 +1,41 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Separator } from "@/components/ui/separator";
+import { Label } from "@/components/ui/label";
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Bot, Copy, Play, AlertCircle, CheckCircle, Shield } from "lucide-react";
+import { ArrowLeft, Code, Copy, Settings, Info, Shield, CheckCircle, AlertCircle } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import { useApiKey } from "@/contexts/ApiKeyContext";
 import ApiKeyConfig from "@/components/ApiKeyConfig";
-import { useToast } from "@/hooks/use-toast";
 
 const Puppeteer = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { openaiApiKey } = useApiKey();
   const { toast } = useToast();
-  
-  const [testCase, setTestCase] = useState('');
-  const [baseUrl, setBaseUrl] = useState('https://example.com');
-  const [priority, setPriority] = useState('medium');
-  const [responsive, setResponsive] = useState(false);
-  const [accessibility, setAccessibility] = useState(false);
-  const [forms, setForms] = useState(false);
-  const [generatedCode, setGeneratedCode] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
+  const { openaiApiKey } = useApiKey();
+  const [testCase, setTestCase] = useState("");
+  const [puppeteerCode, setPuppeteerCode] = useState("");
+  const [baseUrl, setBaseUrl] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [priority, setPriority] = useState("medium");
+  const [testOptions, setTestOptions] = useState({
+    responsive: false,
+    accessibility: false,
+    interactive: true,
+    forms: false
+  });
+  const [isLoading, setIsLoading] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
-  const [checkResult, setCheckResult] = useState<{ status: 'ready' | 'needs-update'; issues?: string[] } | null>(null);
+  const [checkResult, setCheckResult<{ status: 'ready' | 'needs-update'; issues?: string[] } | null>(null);
   const [showCheckDialog, setShowCheckDialog] = useState(false);
-  const [testMetadata, setTestMetadata] = useState<{
-    estimatedTests: number;
-    features: string[];
-    priority: string;
-  } | null>(null);
+  const [testMetadata, setTestMetadata](useState < any) | null > null);
 
-  // Handle incoming test case data from navigation
+  // Handle incoming data from navigation state
   useEffect(() => {
     if (location.state?.testCase) {
       setTestCase(location.state.testCase);
@@ -45,7 +43,7 @@ const Puppeteer = () => {
   }, [location.state]);
 
   const checkGeneratedCode = async () => {
-    if (!generatedCode.trim()) {
+    if (!puppeteerCode.trim()) {
       toast({
         title: "No code to check",
         description: "Generate code first before checking",
@@ -57,17 +55,25 @@ const Puppeteer = () => {
     setIsChecking(true);
     
     try {
-      const systemPrompt = `You are a Puppeteer code quality analyzer. Analyze the provided Puppeteer test code and determine if it's ready for use or needs updates.
+      const systemPrompt = `You are a Puppeteer code quality analyzer for serverless-ready test functions. Analyze the provided code that follows the "async function runTest(page)" pattern and determine if it's ready for use.
 
 Check for:
-1. Proper Puppeteer syntax (page.$, page.waitForSelector, page.type, etc.)
-2. Correct navigation patterns with { waitUntil: 'networkidle0' }
-3. Proper error handling with try-catch blocks
-4. Complete test coverage based on requirements
-5. Missing or incorrect selectors
-6. Proper async/await usage
-7. Missing console.log statements for debugging
-8. Correct function structure
+1. Proper serverless function structure: async function runTest(page) with try-catch
+2. Correct Puppeteer API usage (page.goto, page.$, page.waitForSelector, etc.)
+3. Smart selectors with fallbacks (multiple selectors or robust single selectors)
+4. Proper async/await usage throughout
+5. Console.log statements for debugging and progress tracking
+6. Error handling with meaningful error messages
+7. Complete test coverage based on the original requirements
+8. Proper navigation patterns with waitForLoadState or waitForNavigation
+9. Function completeness (no truncated or incomplete code)
+10. Proper element interaction patterns
+
+This is NOT a standard Puppeteer test file - it's a serverless function. Do NOT flag:
+- Missing test frameworks or describe blocks (this is intentional)
+- Missing test runner setup (this is serverless)
+- Hardcoded URLs (baseURL is passed as parameter)
+- Function format instead of test blocks
 
 Respond with JSON in this exact format:
 {
@@ -75,20 +81,20 @@ Respond with JSON in this exact format:
   "issues": ["issue 1", "issue 2"] // only if status is "needs-update"
 }
 
-If the code is ready, return {"status": "ready"}
-If it needs updates, list specific issues that need to be fixed.`;
+If the code is ready for serverless execution, return {"status": "ready"}
+If it needs updates, list specific technical issues that need to be fixed.`;
 
-      const userPrompt = `Analyze this Puppeteer code:
+      const userPrompt = `Analyze this serverless Puppeteer function:
 
 Original Requirements:
 - Test Case: ${testCase}
 - Base URL: ${baseUrl}
-- Features: ${responsive ? 'Responsive Testing, ' : ''}${accessibility ? 'Accessibility Checks, ' : ''}${forms ? 'Form Validation' : ''}
+- Features: ${Object.entries(testOptions).filter(([_, enabled]) => enabled).map(([option]) => option).join(', ')}
 
 Generated Code:
-${generatedCode}
+${puppeteerCode}
 
-Is this code ready for use or does it need updates?`;
+Is this serverless function ready for use or does it need updates?`;
 
       if (openaiApiKey) {
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -118,11 +124,11 @@ Is this code ready for use or does it need updates?`;
         setShowCheckDialog(true);
       } else {
         // Mock check for demo
-        const mockResult = Math.random() > 0.5 ? 
+        const mockResult = Math.random() > 0.7 ? 
           { status: 'ready' as const } : 
           { 
             status: 'needs-update' as const, 
-            issues: ['Missing error handling in navigation', 'Selectors could be more robust', 'Add more console.log statements for debugging'] 
+            issues: ['Function appears incomplete or truncated', 'Missing console.log statements for better debugging', 'Could use more robust error handling'] 
           };
         setCheckResult(mockResult);
         setShowCheckDialog(true);
@@ -145,92 +151,74 @@ Is this code ready for use or does it need updates?`;
     if (!checkResult?.issues) return;
     
     // Regenerate code with identified issues as additional context
-    setIsGenerating(true);
+    setIsLoading(true);
     
     try {
-      const systemPrompt = `You are a Puppeteer code generator. Generate clean, executable Puppeteer code using this exact structure:
+      const enhancedSystemPrompt = generateSystemPrompt() + `
 
-async function runTest(page) {
-  console.log('Starting test...');
-  
-  try {
-    // Navigation - use proper Puppeteer syntax
-    await page.goto('${baseUrl}', { waitUntil: 'networkidle0' });
-    
-    // Test implementation using authentic Puppeteer methods
-    // Use page.$() for single elements, page.$$() for multiple
-    // Use page.waitForSelector('selector') for waiting
-    // Use page.type('selector', 'text', { delay: 50 }) for typing
-    // Use page.click('selector') for clicking
-    // Use page.$eval('selector', el => el.textContent) for text extraction
-    
-    console.log('✓ Test completed successfully');
-  } catch (error) {
-    console.error('❌ Test failed:', error.message);
-    throw error;
-  }
-}
-
-CRITICAL PUPPETEER SYNTAX RULES:
-1. Navigation: await page.goto(url, { waitUntil: 'networkidle0' })
-2. Element selection: await page.$('selector') or await page.$$('selector')
-3. Waiting: await page.waitForSelector('selector')
-4. Typing: await page.type('input[name="field"]', 'value', { delay: 50 })
-5. Clicking: await page.click('button[type="submit"]')
-6. Text extraction: await page.$eval('h1', el => el.textContent)
-7. Form submission with navigation: await Promise.all([page.click('submit'), page.waitForNavigation({ waitUntil: 'networkidle0' })])
-8. Screenshots: await page.screenshot({ path: 'screenshot.png' })
-9. Viewport: await page.setViewport({ width: 1280, height: 800 })
-10. Element existence check: const element = await page.$('.selector'); if (!element) throw new Error('Element not found');
-
-IMPORTANT: Fix these specific issues that were identified:
+CRITICAL: Address these specific issues identified in the previous code:
 ${checkResult.issues.map(issue => `- ${issue}`).join('\n')}
 
-Generate authentic Puppeteer code that addresses all the identified issues.`;
+Requirements for the updated code:
+- Ensure the function is complete and not truncated
+- Add comprehensive console.log statements for debugging
+- Use robust error handling with meaningful messages
+- Implement smart selectors with multiple fallback options
+- Ensure all async operations use proper await
+- Make sure the function structure is: async function runTest(page) { try { ... } catch { ... } }
 
-      const userPrompt = `Generate improved Puppeteer code for this test case:
+Generate improved, complete code that fixes all identified issues.`;
 
-Test Case: ${testCase}
-Base URL: ${baseUrl}
-Priority: ${priority}
-Responsive Testing: ${responsive}
-Accessibility Testing: ${accessibility}
-Form Testing: ${forms}
+      const userPrompt = `Update the Puppeteer serverless function to fix these issues:
+
+Original Requirements:
+- Test Case: ${testCase}
+- Base URL: ${baseUrl}
+- Features: ${Object.entries(testOptions).filter(([_, enabled]) => enabled).map(([option]) => option).join(', ')}
 
 Previously identified issues to fix:
 ${checkResult.issues.map(issue => `- ${issue}`).join('\n')}
 
-Generate only the runTest function with proper Puppeteer syntax and fix all identified issues.`;
+Generate a complete, improved serverless function that addresses ALL the identified issues while maintaining the original functionality.`;
 
       if (openaiApiKey) {
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
           headers: {
-            'Authorization': `Bearer ${openaiApiKey}`,
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${openaiApiKey}`
           },
           body: JSON.stringify({
-            model: 'gpt-4.1-2025-04-14',
+            model: "gpt-4.1-2025-04-14",
             messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: userPrompt }
+              {
+                role: "system",
+                content: enhancedSystemPrompt
+              },
+              {
+                role: "user",
+                content: userPrompt
+              }
             ],
-            temperature: 0.3,
             max_tokens: 2000,
-          }),
+            temperature: 0.1
+          })
         });
 
         if (!response.ok) {
-          throw new Error('Failed to generate updated code');
+          throw new Error("Failed to generate updated Puppeteer code");
         }
 
         const data = await response.json();
-        const code = data.choices[0].message.content;
-        setGeneratedCode(code);
+        const generatedCode = data.choices[0]?.message?.content || "No code generated";
+        setPuppeteerCode(generatedCode);
+        
+        // Clear the check result to allow fresh checking
+        setCheckResult(null);
         
         toast({
           title: "Code updated successfully",
-          description: "Your Puppeteer test code has been improved",
+          description: "Your Puppeteer test code has been improved based on the identified issues",
         });
       }
     } catch (error) {
@@ -241,224 +229,216 @@ Generate only the runTest function with proper Puppeteer syntax and fix all iden
         variant: "destructive"
       });
     } finally {
-      setIsGenerating(false);
+      setIsLoading(false);
     }
   };
 
-  const generatePuppeteerCode = async () => {
-    if (!testCase.trim()) {
-      toast({
-        title: "Test case required",
-        description: "Please enter a test case description",
-        variant: "destructive"
-      });
-      return;
+  const parseTestRequirements = (testCaseText) => {
+    const text = testCaseText.toLowerCase();
+    const requirements = [];
+    
+    if (text.includes('responsive') || text.includes('mobile') || text.includes('tablet')) {
+      requirements.push('responsive');
     }
-
-    setIsGenerating(true);
+    if (text.includes('accessibility') || text.includes('a11y') || text.includes('alt text')) {
+      requirements.push('accessibility');
+    }
+    if (text.includes('click') || text.includes('interact') || text.includes('button')) {
+      requirements.push('interactive');
+    }
+    if (text.includes('form') || text.includes('submit') || text.includes('input')) {
+      requirements.push('forms');
+    }
     
-    try {
-      const systemPrompt = `You are a Puppeteer code generator. Generate clean, executable Puppeteer code using this exact structure:
+    return requirements;
+  };
 
+  const generateSystemPrompt = () => {
+    return `You are a Puppeteer automation expert. Generate clean, serverless-ready Puppeteer test code using this EXACT structure:
+
+REQUIRED STRUCTURE:
 async function runTest(page) {
-  console.log('Starting test...');
-  
   try {
-    // Navigation - use proper Puppeteer syntax
-    await page.goto('${baseUrl}', { waitUntil: 'networkidle0' });
+    // Navigation
+    await page.goto('{{BASE_URL}}');
+    await page.waitForNavigation({ waitUntil: 'networkidle2' });
     
-    // Test implementation using authentic Puppeteer methods
-    // Use page.$() for single elements, page.$$() for multiple
-    // Use page.waitForSelector('selector') for waiting
-    // Use page.type('selector', 'text', { delay: 50 }) for typing
-    // Use page.click('selector') for clicking
-    // Use page.$eval('selector', el => el.textContent) for text extraction
+    // Authentication (if credentials provided)
+    ${username && password ? `
+    await page.type('[name="username"], [name="email"], #username, #email', '${username}');
+    await page.type('[name="password"], #password', '${password}');
+    await page.click('[type="submit"], button[type="submit"], .login-btn, .submit-btn');
+    await page.waitForNavigation({ waitUntil: 'networkidle2' });
+    console.log('✓ Authentication completed');` : ''}
     
-    console.log('✓ Test completed successfully');
+    // Your generated test code here
+    
+    console.log('🎉 All tests completed successfully!');
   } catch (error) {
     console.error('❌ Test failed:', error.message);
     throw error;
   }
 }
 
-CRITICAL PUPPETEER SYNTAX RULES:
-1. Navigation: await page.goto(url, { waitUntil: 'networkidle0' })
-2. Element selection: await page.$('selector') or await page.$$('selector')
-3. Waiting: await page.waitForSelector('selector')
-4. Typing: await page.type('input[name="field"]', 'value', { delay: 50 })
-5. Clicking: await page.click('button[type="submit"]')
-6. Text extraction: await page.$eval('h1', el => el.textContent)
-7. Form submission with navigation: await Promise.all([page.click('submit'), page.waitForNavigation({ waitUntil: 'networkidle0' })])
-8. Screenshots: await page.screenshot({ path: 'screenshot.png' })
-9. Viewport: await page.setViewport({ width: 1280, height: 800 })
-10. Element existence check: const element = await page.$('.selector'); if (!element) throw new Error('Element not found');
+SELECTOR PATTERNS TO USE:
+- Headlines: 'h1, .headline, [data-testid="headline"], [role="heading"]'
+- Subheadings: 'h2, h3, .subheading, [data-testid="subheading"]'
+- CTA Buttons: 'button, [role="button"], .cta, .btn-primary, [data-testid="cta"]'
+- Forms: 'form, .form, [data-testid="form"]'
+- Navigation: 'nav, .nav, [role="navigation"]'
 
-DO NOT USE PLAYWRIGHT SYNTAX:
-- NO page.locator() - use page.$() instead
-- NO waitForLoadState() - use { waitUntil: 'networkidle0' } in goto()
-- NO .waitFor({ state: 'visible' }) - use page.waitForSelector()
-- NO setViewportSize() - use page.setViewport()
+REQUIREMENTS:
+- Use smart selectors with fallbacks
+- Include console.log for each successful test
+- Use await page.waitForSelector(selector) for visibility checks
+- Use await page.$eval(selector, el => el.innerText) to get text content
+- Add proper error handling
+- Generate serverless-ready code (no imports)
+- Use waitForNavigation({ waitUntil: 'networkidle2' }) after navigation/interactions
 
-Generate authentic Puppeteer code that can run with the actual Puppeteer library.`;
+RESPONSIVE TESTING (if requested):
+const viewports = [
+  { name: 'Mobile', width: 375, height: 667 },
+  { name: 'Tablet', width: 768, height: 1024 },
+  { name: 'Desktop', width: 1280, height: 800 }
+];
 
-      const userPrompt = `Generate Puppeteer code for this test case:
+for (const viewport of viewports) {
+  await page.setViewport({ width: viewport.width, height: viewport.height });
+  await page.waitForSelector('h1, .headline');
+  console.log(\`✓ \${viewport.name} view - layout responsive\`);
+}
 
-Test Case: ${testCase}
-Base URL: ${baseUrl}
-Priority: ${priority}
-Responsive Testing: ${responsive}
-Accessibility Testing: ${accessibility}
-Form Testing: ${forms}
+ACCESSIBILITY TESTING (if requested):
+const title = await page.title();
+console.log(\`✓ Page title: \${title}\`);
 
-Requirements:
-- Use authentic Puppeteer syntax (page.$, page.waitForSelector, page.type, etc.)
-- Add proper error handling with try-catch blocks
-- Include console.log statements for debugging
-- Use { delay: 50 } for typing to simulate human behavior
-- Handle navigation properly with waitUntil: 'networkidle0'
-${responsive ? '- Include viewport testing: await page.setViewport({ width: 375, height: 667 }) for mobile' : ''}
-${accessibility ? '- Include accessibility checks using page.$eval to check ARIA attributes' : ''}
-${forms ? '- Include form validation: check required fields, error messages after submission' : ''}
+const imagesWithoutAlt = await page.$$eval('img:not([alt])', imgs => imgs.length);
+console.log(\`✓ Images without alt text: \${imagesWithoutAlt}\`);
 
-Generate only the runTest function with proper Puppeteer syntax.`;
+FORM TESTING (if requested):
+await page.type('[name="email"], #email', 'test@example.com');
+await page.click('[type="submit"], button[type="submit"]');
+await page.waitForNavigation({ waitUntil: 'networkidle2' });
+console.log('✓ Form submission successful');
 
-      if (openaiApiKey) {
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${openaiApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'gpt-4.1-2025-04-14',
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: userPrompt }
-            ],
-            temperature: 0.3,
-            max_tokens: 2000,
-          }),
-        });
+Return ONLY the function code, no explanations.`;
+  };
 
-        if (!response.ok) {
-          throw new Error('Failed to generate code');
-        }
+  const generateTestPrompt = () => {
+    const detectedRequirements = parseTestRequirements(testCase);
+    const enabledOptions = Object.entries(testOptions)
+      .filter(([_, enabled]) => enabled)
+      .map(([option, _]) => option);
+    
+    const allRequirements = [...new Set([...detectedRequirements, ...enabledOptions])];
+    
+    return `Generate Puppeteer test code for:
+BASE_URL: ${baseUrl || 'https://your-app.com'}
+PRIORITY: ${priority}
+TEST_REQUIREMENTS: ${allRequirements.join(', ')}
 
-        const data = await response.json();
-        const code = data.choices[0].message.content;
-        setGeneratedCode(code);
-        
-        // Generate metadata
-        const features = [];
-        if (responsive) features.push('Responsive Testing');
-        if (accessibility) features.push('Accessibility Checks');
-        if (forms) features.push('Form Validation');
-        
-        setTestMetadata({
-          estimatedTests: testCase.split(/[.!?]/).filter(s => s.trim()).length,
-          features,
-          priority
-        });
-      } else {
-        // Mock data with correct Puppeteer syntax
-        const mockCode = `async function runTest(page) {
-  console.log('Starting test...');
-  
-  try {
-    // Navigate to the application
-    await page.goto('${baseUrl}', { waitUntil: 'networkidle0' });
+TEST CASES:
+${testCase}
+
+Include these test types based on requirements:
+${allRequirements.includes('responsive') ? '- Responsive design testing across viewports' : ''}
+${allRequirements.includes('accessibility') ? '- Accessibility checks (titles, alt text)' : ''}
+${allRequirements.includes('interactive') ? '- Interactive element testing (clicks, hovers)' : ''}
+${allRequirements.includes('forms') ? '- Form validation and submission testing' : ''}
+
+Generate clean, executable code following the exact structure provided.`;
+  };
+
+  const generatePuppeteerCode = async () => {
+    if (!testCase.trim()) return;
     
-    // Test implementation for: ${testCase}
-    await page.waitForSelector('button');
-    const button = await page.$('button');
-    if (!button) throw new Error('Button not found');
-    
-    await page.click('button');
-    console.log('✓ Button clicked successfully');
-    
-    // Verify the action result
-    await page.waitForSelector('.result, [data-testid="result"], .success-message');
-    const resultText = await page.$eval('.result, [data-testid="result"], .success-message', 
-      el => el.textContent);
-    console.log(\`✓ Result: \${resultText}\`);
-    
-    ${responsive ? `
-    // Responsive testing
-    console.log('Testing mobile viewport...');
-    await page.setViewport({ width: 375, height: 667 });
-    await page.screenshot({ path: 'mobile-view.png' });
-    console.log('✓ Mobile viewport tested');
-    
-    console.log('Testing desktop viewport...');
-    await page.setViewport({ width: 1920, height: 1080 });
-    await page.screenshot({ path: 'desktop-view.png' });
-    console.log('✓ Desktop viewport tested');` : ''}
-    
-    ${accessibility ? `
-    // Accessibility checks
-    const focusableElements = await page.$$('button, a, input, select, textarea, [tabindex]:not([tabindex="-1"])');
-    console.log(\`✓ Found \${focusableElements.length} focusable elements\`);
-    
-    const ariaLabels = await page.$$eval('[aria-label], [aria-labelledby]', 
-      els => els.map(el => el.getAttribute('aria-label') || el.getAttribute('aria-labelledby')));
-    console.log(\`✓ Found \${ariaLabels.length} elements with ARIA labels\`);` : ''}
-    
-    ${forms ? `
-    // Form testing (if forms exist)
-    const forms = await page.$$('form');
-    if (forms.length > 0) {
-      console.log(\`Testing \${forms.length} form(s)...\`);
-      
-      const inputs = await page.$$('input[required]');
-      console.log(\`✓ Found \${inputs.length} required fields\`);
-      
-      // Test form validation by submitting empty form
-      const submitBtn = await page.$('button[type="submit"], input[type="submit"]');
-      if (submitBtn) {
-        await page.click('button[type="submit"], input[type="submit"]');
-        await page.waitForTimeout(1000); // Wait for validation messages
-        console.log('✓ Form validation tested');
-      }
-    }` : ''}
-    
-    console.log('✓ Test completed successfully');
-  } catch (error) {
-    console.error('❌ Test failed:', error.message);
-    throw error;
-  }
-}`;
-        
-        setGeneratedCode(mockCode);
-        setTestMetadata({
-          estimatedTests: 1,
-          features: responsive || accessibility || forms ? 
-            [responsive && 'Responsive Testing', accessibility && 'Accessibility Checks', forms && 'Form Validation'].filter(Boolean) : [],
-          priority
-        });
-      }
-      
+    if (!openaiApiKey) {
       toast({
-        title: "Code generated successfully",
-        description: "Your Puppeteer test code is ready",
+        title: "API Key Required",
+        description: "Please configure your OpenAI API key first.",
+        variant: "destructive",
       });
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${openaiApiKey}`
+        },
+        body: JSON.stringify({
+          model: "gpt-4.1-2025-04-14",
+          messages: [
+            {
+              role: "system",
+              content: generateSystemPrompt()
+            },
+            {
+              role: "user",
+              content: generateTestPrompt()
+            }
+          ],
+          max_tokens: 2000,
+          temperature: 0.1
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate Puppeteer code");
+      }
+
+      const data = await response.json();
+      const generatedCode = data.choices[0]?.message?.content || "No code generated";
+      setPuppeteerCode(generatedCode);
+      
+      // Generate metadata
+      const detectedRequirements = parseTestRequirements(testCase);
+      const enabledOptions = Object.entries(testOptions)
+        .filter(([_, enabled]) => enabled)
+        .map(([option, _]) => option);
+      
+      setTestMetadata({
+        testCount: 3 + enabledOptions.length * 2,
+        features: [...new Set([...detectedRequirements, ...enabledOptions])],
+        priority: priority
+      });
+      
     } catch (error) {
-      console.error('Error generating code:', error);
       toast({
-        title: "Generation failed",
-        description: "Please check your API key and try again",
+        title: "Error",
+        description: "Failed to generate Puppeteer code. Please check your API key and try again.",
         variant: "destructive"
       });
     } finally {
-      setIsGenerating(false);
+      setIsLoading(false);
     }
   };
 
   const copyToClipboard = async () => {
-    await navigator.clipboard.writeText(generatedCode);
-    toast({
-      title: "Copied to clipboard",
-      description: "Code has been copied to your clipboard",
-    });
+    try {
+      await navigator.clipboard.writeText(puppeteerCode);
+      toast({
+        title: "Copied!",
+        description: "Puppeteer code copied to clipboard",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to copy code",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleTestOptionChange = (option, checked) => {
+    setTestOptions(prev => ({
+      ...prev,
+      [option]: checked
+    }));
   };
 
   return (
@@ -467,217 +447,229 @@ Generate only the runTest function with proper Puppeteer syntax.`;
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/')}
-            className="hover:bg-white/50"
+            variant="outline"
+            onClick={() => navigate("/")}
+            className="flex items-center gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
+            Back
           </Button>
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-gradient-to-br from-blue-500 to-green-500 rounded-2xl">
-              <Bot className="h-8 w-8 text-white" />
+            <div className="p-3 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-2xl">
+              <Code className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-800">Puppeteer Generator</h1>
-              <p className="text-gray-600">Generate Puppeteer scripts for browser automation</p>
+              <h1 className="text-3xl font-bold text-gray-800">Puppeteer</h1>
+              <p className="text-gray-600">Generate clean, serverless-ready Puppeteer scripts</p>
             </div>
           </div>
         </div>
 
+        {/* API Key Configuration */}
+        <ApiKeyConfig />
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Input Section */}
           <div className="space-y-6">
+            {/* Configuration Card */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Bot className="h-5 w-5 text-blue-600" />
-                  Test Case Description
+                  <Settings className="h-5 w-5" />
+                  Test Configuration
                 </CardTitle>
+                <CardDescription>
+                  Configure your test environment and preferences
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="testCase">Describe your test scenario</Label>
-                  <Textarea
-                    id="testCase"
-                    value={testCase}
-                    onChange={(e) => setTestCase(e.target.value)}
-                    placeholder="Example: Navigate to the login page, enter valid credentials, click login button, and verify the user is redirected to the dashboard"
-                    className="min-h-[120px] mt-2"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="baseUrl">Base URL</Label>
-                  <Input
-                    id="baseUrl"
+                  <label className="block text-sm font-medium mb-2">Base URL</label>
+                  <input
+                    type="url"
+                    placeholder="https://your-app.com"
                     value={baseUrl}
                     onChange={(e) => setBaseUrl(e.target.value)}
-                    placeholder="https://example.com"
-                    className="mt-2"
+                    className="w-full p-2 border rounded-md"
                   />
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Test Configuration</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
-                  <Label className="text-base font-medium">Priority Level</Label>
-                  <RadioGroup value={priority} onValueChange={setPriority} className="mt-2">
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="low" id="low" />
-                      <Label htmlFor="low">Low - Basic functionality</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="medium" id="medium" />
-                      <Label htmlFor="medium">Medium - Standard testing</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="high" id="high" />
-                      <Label htmlFor="high">High - Comprehensive testing</Label>
-                    </div>
-                  </RadioGroup>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Username</label>
+                    <input
+                      type="text"
+                      placeholder="test-user"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      className="w-full p-2 border rounded-md"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Password</label>
+                    <input
+                      type="password"
+                      placeholder="test-password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full p-2 border rounded-md"
+                    />
+                  </div>
                 </div>
-
-                <Separator />
-
                 <div>
-                  <Label className="text-base font-medium mb-3 block">Test Features</Label>
-                  <div className="space-y-3">
+                  <label className="block text-sm font-medium mb-2">Priority</label>
+                  <Select value={priority} onValueChange={setPriority}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Test Options */}
+                <div>
+                  <label className="block text-sm font-medium mb-3">Test Options</label>
+                  <div className="space-y-2">
                     <div className="flex items-center space-x-2">
-                      <Checkbox 
-                        id="responsive" 
-                        checked={responsive}
-                        onCheckedChange={(checked) => setResponsive(checked === true)}
+                      <Checkbox
+                        id="responsive"
+                        checked={testOptions.responsive}
+                        onCheckedChange={(checked) => handleTestOptionChange('responsive', checked)}
                       />
-                      <Label htmlFor="responsive">Responsive Testing</Label>
+                      <Label htmlFor="responsive" className="text-sm">Responsive Design Testing</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Checkbox 
-                        id="accessibility" 
-                        checked={accessibility}
-                        onCheckedChange={(checked) => setAccessibility(checked === true)}
+                      <Checkbox
+                        id="accessibility"
+                        checked={testOptions.accessibility}
+                        onCheckedChange={(checked) => handleTestOptionChange('accessibility', checked)}
                       />
-                      <Label htmlFor="accessibility">Accessibility Checks</Label>
+                      <Label htmlFor="accessibility" className="text-sm">Accessibility Checks</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Checkbox 
-                        id="forms" 
-                        checked={forms}
-                        onCheckedChange={(checked) => setForms(checked === true)}
+                      <Checkbox
+                        id="interactive"
+                        checked={testOptions.interactive}
+                        onCheckedChange={(checked) => handleTestOptionChange('interactive', checked)}
                       />
-                      <Label htmlFor="forms">Form Validation</Label>
+                      <Label htmlFor="interactive" className="text-sm">Interactive Element Testing</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="forms"
+                        checked={testOptions.forms}
+                        onCheckedChange={(checked) => handleTestOptionChange('forms', checked)}
+                      />
+                      <Label htmlFor="forms" className="text-sm">Form Validation</Label>
                     </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Button 
-              onClick={generatePuppeteerCode}
-              disabled={isGenerating || !testCase.trim()}
-              className="w-full"
-              size="lg"
-            >
-              {isGenerating ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Play className="mr-2 h-4 w-4" />
-                  Generate Puppeteer Code
-                </>
-              )}
-            </Button>
+            {/* Test Case Input */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Test Case Input</CardTitle>
+                <CardDescription>
+                  Describe your test scenarios in natural language
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Textarea
+                  placeholder="Example: 
+Test the main homepage for:
+- Headline visibility and correct text
+- CTA button functionality  
+- Form submission with validation
+- Mobile responsiveness
+- Accessibility compliance"
+                  value={testCase}
+                  onChange={(e) => setTestCase(e.target.value)}
+                  className="min-h-[200px]"
+                />
+                
+                <Button
+                  onClick={generatePuppeteerCode}
+                  disabled={isLoading || !testCase.trim()}
+                  className="w-full"
+                >
+                  {isLoading ? "Generating..." : "Generate Puppeteer Code"}
+                </Button>
+
+                {/* Test Metadata */}
+                {testMetadata && (
+                  <div className="bg-blue-50 p-3 rounded-md">
+                    <div className="flex items-center gap-2 text-sm text-blue-700">
+                      <Info className="h-4 w-4" />
+                      <span className="font-medium">Test Preview:</span>
+                    </div>
+                    <div className="mt-2 text-sm text-blue-600">
+                      <p>Estimated tests: {testMetadata.testCount}</p>
+                      <p>Features: {testMetadata.features.join(', ')}</p>
+                      <p>Priority: {testMetadata.priority}</p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           {/* Output Section */}
-          <div className="space-y-6">
-            {!openaiApiKey && (
-              <Card className="border-amber-200 bg-amber-50">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-2 text-amber-800 mb-4">
-                    <AlertCircle className="h-5 w-5" />
-                    <span className="font-medium">API Key Required</span>
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Generated Puppeteer Code</CardTitle>
+                  <CardDescription>
+                    Clean, serverless-ready test script
+                  </CardDescription>
+                </div>
+                {puppeteerCode && (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={checkGeneratedCode}
+                      disabled={isChecking}
+                    >
+                      {isChecking ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2" />
+                      ) : (
+                        <Shield className="mr-2 h-4 w-4" />
+                      )}
+                      Check
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={copyToClipboard}
+                      className="flex items-center gap-2"
+                    >
+                      <Copy className="h-4 w-4" />
+                      Copy
+                    </Button>
                   </div>
-                  <ApiKeyConfig />
-                </CardContent>
-              </Card>
-            )}
-
-            {testMetadata && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                    Test Overview
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="font-medium text-gray-700">Estimated Tests:</span>
-                      <p className="text-gray-600">{testMetadata.estimatedTests}</p>
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-700">Priority:</span>
-                      <p className="text-gray-600 capitalize">{testMetadata.priority}</p>
-                    </div>
-                    {testMetadata.features.length > 0 && (
-                      <div className="col-span-2">
-                        <span className="font-medium text-gray-700">Features:</span>
-                        <p className="text-gray-600">{testMetadata.features.join(', ')}</p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {generatedCode && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span>Generated Puppeteer Code</span>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={checkGeneratedCode}
-                        disabled={isChecking}
-                      >
-                        {isChecking ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2" />
-                        ) : (
-                          <Shield className="mr-2 h-4 w-4" />
-                        )}
-                        Check
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={copyToClipboard}
-                      >
-                        <Copy className="mr-2 h-4 w-4" />
-                        Copy
-                      </Button>
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <pre className="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto text-sm">
-                    <code>{generatedCode}</code>
-                  </pre>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {puppeteerCode ? (
+                <div className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm overflow-auto max-h-[600px]">
+                  <pre>{puppeteerCode}</pre>
+                </div>
+              ) : (
+                <div className="text-center py-12 text-gray-500">
+                  <Code className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Generated Puppeteer code will appear here</p>
+                  <p className="text-sm mt-2">Configure your settings and describe your test cases to get started</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
 
@@ -722,9 +714,9 @@ Generate only the runTest function with proper Puppeteer syntax.`;
                 <Button 
                   onClick={handleUpdateCode}
                   className="bg-purple-600 hover:bg-purple-700"
-                  disabled={isGenerating}
+                  disabled={isLoading}
                 >
-                  {isGenerating ? (
+                  {isLoading ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
                       Updating...
