@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,33 +49,45 @@ const Puppeteer = () => {
       const systemPrompt = `You are a Puppeteer code generator. Generate clean, executable Puppeteer code using this exact structure:
 
 async function runTest(page) {
-  // Your Puppeteer code here
   console.log('Starting test...');
   
-  // Navigation
-  await page.goto('${baseUrl}');
-  await page.waitForLoadState('networkidle');
-  
-  // Test implementation
-  // Use clean selectors and proper waits
-  // Add console.log statements for debugging
-  
-  console.log('Test completed successfully');
+  try {
+    // Navigation - use proper Puppeteer syntax
+    await page.goto('${baseUrl}', { waitUntil: 'networkidle0' });
+    
+    // Test implementation using authentic Puppeteer methods
+    // Use page.$() for single elements, page.$$() for multiple
+    // Use page.waitForSelector('selector') for waiting
+    // Use page.type('selector', 'text', { delay: 50 }) for typing
+    // Use page.click('selector') for clicking
+    // Use page.$eval('selector', el => el.textContent) for text extraction
+    
+    console.log('✓ Test completed successfully');
+  } catch (error) {
+    console.error('❌ Test failed:', error.message);
+    throw error;
+  }
 }
 
-IMPORTANT RULES:
-1. Use ONLY the function structure above - no imports, no external dependencies
-2. Use clean CSS selectors with fallbacks: page.locator('button:has-text("Login"), [data-testid="login-btn"], .login-button').first()
-3. Always use proper waits: waitForSelector, waitForLoadState, waitForTimeout
-4. Add console.log statements for debugging
-5. Handle errors gracefully with try-catch blocks
-6. Use page.screenshot() for visual verification when needed
-7. For forms: fill inputs, handle dropdowns, submit forms
-8. For responsive: test different viewport sizes if requested
-9. For accessibility: check ARIA labels, focus states if requested
-10. Keep code clean, readable, and production-ready
+CRITICAL PUPPETEER SYNTAX RULES:
+1. Navigation: await page.goto(url, { waitUntil: 'networkidle0' })
+2. Element selection: await page.$('selector') or await page.$$('selector')
+3. Waiting: await page.waitForSelector('selector')
+4. Typing: await page.type('input[name="field"]', 'value', { delay: 50 })
+5. Clicking: await page.click('button[type="submit"]')
+6. Text extraction: await page.$eval('h1', el => el.textContent)
+7. Form submission with navigation: await Promise.all([page.click('submit'), page.waitForNavigation({ waitUntil: 'networkidle0' })])
+8. Screenshots: await page.screenshot({ path: 'screenshot.png' })
+9. Viewport: await page.setViewport({ width: 1280, height: 800 })
+10. Element existence check: const element = await page.$('.selector'); if (!element) throw new Error('Element not found');
 
-Generate code based on the test case description and configuration provided.`;
+DO NOT USE PLAYWRIGHT SYNTAX:
+- NO page.locator() - use page.$() instead
+- NO waitForLoadState() - use { waitUntil: 'networkidle0' } in goto()
+- NO .waitFor({ state: 'visible' }) - use page.waitForSelector()
+- NO setViewportSize() - use page.setViewport()
+
+Generate authentic Puppeteer code that can run with the actual Puppeteer library.`;
 
       const userPrompt = `Generate Puppeteer code for this test case:
 
@@ -86,15 +99,16 @@ Accessibility Testing: ${accessibility}
 Form Testing: ${forms}
 
 Requirements:
-- Use clean selector patterns with fallbacks
-- Add proper waits and error handling
+- Use authentic Puppeteer syntax (page.$, page.waitForSelector, page.type, etc.)
+- Add proper error handling with try-catch blocks
 - Include console.log statements for debugging
-- Make it serverless-compatible (no external imports)
-${responsive ? '- Include viewport testing for mobile/desktop' : ''}
-${accessibility ? '- Include accessibility checks (ARIA, focus states)' : ''}
-${forms ? '- Include form validation and submission testing' : ''}
+- Use { delay: 50 } for typing to simulate human behavior
+- Handle navigation properly with waitUntil: 'networkidle0'
+${responsive ? '- Include viewport testing: await page.setViewport({ width: 375, height: 667 }) for mobile' : ''}
+${accessibility ? '- Include accessibility checks using page.$eval to check ARIA attributes' : ''}
+${forms ? '- Include form validation: check required fields, error messages after submission' : ''}
 
-Generate only the runTest function code.`;
+Generate only the runTest function with proper Puppeteer syntax.`;
 
       if (openaiApiKey) {
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -134,37 +148,72 @@ Generate only the runTest function code.`;
           priority
         });
       } else {
-        // Mock data for demonstration
+        // Mock data with correct Puppeteer syntax
         const mockCode = `async function runTest(page) {
   console.log('Starting test...');
   
-  // Navigate to the application
-  await page.goto('${baseUrl}');
-  await page.waitForLoadState('networkidle');
-  
-  // Test implementation based on: ${testCase}
-  const button = page.locator('button:has-text("Click"), [data-testid="click-btn"], .click-button').first();
-  await button.waitFor({ state: 'visible' });
-  await button.click();
-  
-  // Verify the action
-  await page.waitForSelector('.success-message, [data-testid="success"], .result');
-  console.log('Action completed successfully');
-  
-  ${responsive ? `
-  // Responsive testing
-  await page.setViewportSize({ width: 375, height: 667 }); // Mobile
-  await page.screenshot({ path: 'mobile-view.png' });
-  
-  await page.setViewportSize({ width: 1920, height: 1080 }); // Desktop
-  await page.screenshot({ path: 'desktop-view.png' });` : ''}
-  
-  ${accessibility ? `
-  // Accessibility checks
-  const focusableElements = await page.locator('button, a, input, select, textarea').count();
-  console.log(\`Found \${focusableElements} focusable elements\`);` : ''}
-  
-  console.log('Test completed successfully');
+  try {
+    // Navigate to the application
+    await page.goto('${baseUrl}', { waitUntil: 'networkidle0' });
+    
+    // Test implementation for: ${testCase}
+    await page.waitForSelector('button');
+    const button = await page.$('button');
+    if (!button) throw new Error('Button not found');
+    
+    await page.click('button');
+    console.log('✓ Button clicked successfully');
+    
+    // Verify the action result
+    await page.waitForSelector('.result, [data-testid="result"], .success-message');
+    const resultText = await page.$eval('.result, [data-testid="result"], .success-message', 
+      el => el.textContent);
+    console.log(\`✓ Result: \${resultText}\`);
+    
+    ${responsive ? `
+    // Responsive testing
+    console.log('Testing mobile viewport...');
+    await page.setViewport({ width: 375, height: 667 });
+    await page.screenshot({ path: 'mobile-view.png' });
+    console.log('✓ Mobile viewport tested');
+    
+    console.log('Testing desktop viewport...');
+    await page.setViewport({ width: 1920, height: 1080 });
+    await page.screenshot({ path: 'desktop-view.png' });
+    console.log('✓ Desktop viewport tested');` : ''}
+    
+    ${accessibility ? `
+    // Accessibility checks
+    const focusableElements = await page.$$('button, a, input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    console.log(\`✓ Found \${focusableElements.length} focusable elements\`);
+    
+    const ariaLabels = await page.$$eval('[aria-label], [aria-labelledby]', 
+      els => els.map(el => el.getAttribute('aria-label') || el.getAttribute('aria-labelledby')));
+    console.log(\`✓ Found \${ariaLabels.length} elements with ARIA labels\`);` : ''}
+    
+    ${forms ? `
+    // Form testing (if forms exist)
+    const forms = await page.$$('form');
+    if (forms.length > 0) {
+      console.log(\`Testing \${forms.length} form(s)...\`);
+      
+      const inputs = await page.$$('input[required]');
+      console.log(\`✓ Found \${inputs.length} required fields\`);
+      
+      // Test form validation by submitting empty form
+      const submitBtn = await page.$('button[type="submit"], input[type="submit"]');
+      if (submitBtn) {
+        await page.click('button[type="submit"], input[type="submit"]');
+        await page.waitForTimeout(1000); // Wait for validation messages
+        console.log('✓ Form validation tested');
+      }
+    }` : ''}
+    
+    console.log('✓ Test completed successfully');
+  } catch (error) {
+    console.error('❌ Test failed:', error.message);
+    throw error;
+  }
 }`;
         
         setGeneratedCode(mockCode);
