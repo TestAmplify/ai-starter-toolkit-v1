@@ -1,7 +1,7 @@
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Quote, MessageCircle, FileText, Palette, Sparkles, ArrowRight, Bot, Bug } from "lucide-react";
+import { Quote, MessageCircle, FileText, Palette, Sparkles, ArrowRight, Bot, Bug, Code2, Target } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Index = () => {
@@ -71,6 +71,22 @@ const Index = () => {
       path: "/stacktrace",
       color: "bg-gradient-to-br from-red-500 to-orange-500",
       textColor: "text-red-600"
+    },
+    {
+      title: "CSS Selector Generator",
+      description: "Generate reliable CSS selectors from HTML or screenshots",
+      icon: Code2,
+      path: "/css-selector",
+      color: "bg-gradient-to-br from-violet-500 to-purple-500",
+      textColor: "text-violet-600"
+    },
+    {
+      title: "XPath Generator",
+      description: "Create robust XPath expressions for web automation",
+      icon: Target,
+      path: "/xpath",
+      color: "bg-gradient-to-br from-amber-500 to-yellow-500",
+      textColor: "text-amber-600"
     }
   ];
 

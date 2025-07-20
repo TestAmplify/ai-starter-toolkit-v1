@@ -14,6 +14,8 @@ import TestCases from "./pages/TestCases";
 import PlayWrighter from "./pages/PlayWrighter";
 import Puppeteer from "./pages/Puppeteer";
 import StackTrace from "./pages/StackTrace";
+import CSSSelector from "./pages/CSSSelector";
+import XPathGenerator from "./pages/XPathGenerator";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +37,8 @@ const App = () => (
             <Route path="/playwright" element={<PlayWrighter />} />
             <Route path="/puppeteer" element={<Puppeteer />} />
             <Route path="/stacktrace" element={<StackTrace />} />
+            <Route path="/css-selector" element={<CSSSelector />} />
+            <Route path="/xpath" element={<XPathGenerator />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
