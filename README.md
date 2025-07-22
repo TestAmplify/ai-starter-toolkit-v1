@@ -6,10 +6,10 @@ Follow these steps:
 
 ```sh
 # Step 1: Clone the repository using the project's Git URL.
-git clone <[YOUR_GIT_URL](https://github.com/TestAmplify/ai-starter-toolkit-v1.git)>
+git clone https://github.com/TestAmplify/ai-starter-toolkit-v1.git
 
 # Step 2: Navigate to the project directory.
-cd <ai-starter-toolkit-v1>
+cd ai-starter-toolkit-v1
 
 # Step 3: Install the necessary dependencies.
 npm i
